@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: mega-app-api
+    runtime: docker
+    repo: https://github.com/tolkozin/mega-app-api
+    branch: main
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
