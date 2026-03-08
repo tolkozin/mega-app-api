@@ -225,7 +225,9 @@ def run_saas_model(config: SaasConfig, sens_params: dict | None = None):
     # ===================== OPEX =====================
     salaries = np.zeros(N)
     for i in range(N):
-        salaries[i] = config.salaries_base * ((1 + config.salaries_growth / 100.0) ** i)
+        phase = get_phase(i + 1)
+        cfg = phase_cfg[phase]
+        salaries[i] = cfg.monthly_salary
 
     df["Marketing"] = ad_budgets
     df["Salaries"] = salaries
@@ -234,7 +236,7 @@ def run_saas_model(config: SaasConfig, sens_params: dict | None = None):
 
     # ===================== P&L =====================
     df["EBITDA"] = df["Gross Revenue"] - df["COGS"] - df["Marketing"] - df["Salaries"] - df["Misc Costs"]
-    df["Corporate Tax"] = df["EBITDA"].apply(lambda x: x * (config.corporate_tax / 100.0) if x > 0 else 0)
+    df["Corporate Tax"] = df["Gross Revenue"] * (config.corporate_tax / 100.0)
     df["Net Profit"] = df["EBITDA"] - df["Corporate Tax"]
     df["Net Cash Flow"] = df["Net Profit"]
 

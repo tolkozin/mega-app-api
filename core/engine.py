@@ -48,7 +48,7 @@ def run_model(config: ModelConfig, sens_params: dict | None = None):
             "ad": p1.ad_budget, "cpi": p1.cpi,
             "ct": p1.conv_trial / 100.0 * conv_factor,
             "cp": p1.conv_paid / 100.0 * conv_factor,
-            "sal": p1.salaries_total / config.phase1_dur,
+            "sal": p1.monthly_salary,
             "misc": p1.misc_total / config.phase1_dur,
             "inv": p1.investment, "churn_m": 1.0,
             "ad_growth_mode": "Percentage (%)", "ad_growth_pct": 0.0, "ad_growth_abs": 0.0,
@@ -66,7 +66,7 @@ def run_model(config: ModelConfig, sens_params: dict | None = None):
             "ad": p2.ad_budget, "cpi": p2.cpi,
             "ct": p2.conv_trial / 100.0 * conv_factor,
             "cp": p2.conv_paid / 100.0 * conv_factor,
-            "sal": p2.salaries_total / config.phase2_dur,
+            "sal": p2.monthly_salary,
             "misc": p2.misc_total / config.phase2_dur,
             "inv": p2.investment, "churn_m": p2.churn_mult,
             "ad_growth_mode": p2.ad_growth_mode, "ad_growth_pct": p2.ad_growth_pct, "ad_growth_abs": p2.ad_growth_abs,
@@ -84,7 +84,7 @@ def run_model(config: ModelConfig, sens_params: dict | None = None):
             "ad": p3.ad_budget, "cpi": p3.cpi,
             "ct": p3.conv_trial / 100.0 * conv_factor,
             "cp": p3.conv_paid / 100.0 * conv_factor,
-            "sal": p3.salaries_total / phase3_dur,
+            "sal": p3.monthly_salary,
             "misc": p3.misc_total / phase3_dur,
             "inv": p3.investment, "churn_m": p3.churn_mult,
             "ad_growth_mode": p3.ad_growth_mode, "ad_growth_pct": p3.ad_growth_pct, "ad_growth_abs": p3.ad_growth_abs,
@@ -194,36 +194,41 @@ def run_model(config: ModelConfig, sens_params: dict | None = None):
         for plan in ["weekly", "monthly", "annual"]:
             cohorts[f"{plat}_{plan}"] = np.zeros((N, N))
 
+    # Pre-compute per-month retention factors (avoids repeated get_phase calls)
+    ret_weekly = np.zeros(N)
+    ret_monthly = np.zeros(N)
+    ret_annual = np.zeros(N)  # only applied at 12-month boundaries
+    for j in range(N):
+        mult = churn_mult_map[get_phase(j + 1)] * churn_factor
+        ret_weekly[j] = 1 - min(1.0, base_churn_w * mult)
+        ret_monthly[j] = 1 - min(1.0, base_churn_m * mult)
+        ret_annual[j] = 1 - min(1.0, base_non_renewal * mult)
+
+    new_web = df["New Web Users"].values
+    new_store = df["New Store Users"].values
+
     for i in range(N):
-        nw = df.loc[i, "New Web Users"]
-        ns = df.loc[i, "New Store Users"]
         phase_i = get_phase(i + 1)
         mw, mm, ma = get_mix(phase_i)
 
-        cohorts["web_weekly"][i, i] = nw * mw
-        cohorts["web_monthly"][i, i] = nw * mm
-        cohorts["web_annual"][i, i] = nw * ma
-        cohorts["store_weekly"][i, i] = ns * mw
-        cohorts["store_monthly"][i, i] = ns * mm
-        cohorts["store_annual"][i, i] = ns * ma
+        cohorts["web_weekly"][i, i] = new_web[i] * mw
+        cohorts["web_monthly"][i, i] = new_web[i] * mm
+        cohorts["web_annual"][i, i] = new_web[i] * ma
+        cohorts["store_weekly"][i, i] = new_store[i] * mw
+        cohorts["store_monthly"][i, i] = new_store[i] * mm
+        cohorts["store_annual"][i, i] = new_store[i] * ma
 
         for j in range(i + 1, N):
-            phase_j = get_phase(j + 1)
-            mult = churn_mult_map[phase_j] * churn_factor
+            cohorts["web_weekly"][i, j] = cohorts["web_weekly"][i, j - 1] * ret_weekly[j]
+            cohorts["store_weekly"][i, j] = cohorts["store_weekly"][i, j - 1] * ret_weekly[j]
 
-            cw = min(1.0, base_churn_w * mult)
-            cohorts["web_weekly"][i, j] = cohorts["web_weekly"][i, j - 1] * (1 - cw)
-            cohorts["store_weekly"][i, j] = cohorts["store_weekly"][i, j - 1] * (1 - cw)
-
-            cm = min(1.0, base_churn_m * mult)
-            cohorts["web_monthly"][i, j] = cohorts["web_monthly"][i, j - 1] * (1 - cm)
-            cohorts["store_monthly"][i, j] = cohorts["store_monthly"][i, j - 1] * (1 - cm)
+            cohorts["web_monthly"][i, j] = cohorts["web_monthly"][i, j - 1] * ret_monthly[j]
+            cohorts["store_monthly"][i, j] = cohorts["store_monthly"][i, j - 1] * ret_monthly[j]
 
             months_since = j - i
             if months_since > 0 and months_since % 12 == 0:
-                ca = min(1.0, base_non_renewal * mult)
-                cohorts["web_annual"][i, j] = cohorts["web_annual"][i, j - 1] * (1 - ca)
-                cohorts["store_annual"][i, j] = cohorts["store_annual"][i, j - 1] * (1 - ca)
+                cohorts["web_annual"][i, j] = cohorts["web_annual"][i, j - 1] * ret_annual[j]
+                cohorts["store_annual"][i, j] = cohorts["store_annual"][i, j - 1] * ret_annual[j]
             else:
                 cohorts["web_annual"][i, j] = cohorts["web_annual"][i, j - 1]
                 cohorts["store_annual"][i, j] = cohorts["store_annual"][i, j - 1]
@@ -346,7 +351,7 @@ def run_model(config: ModelConfig, sens_params: dict | None = None):
     # P&L on cash basis
     df["Gross Profit"] = df["Total Gross Revenue"] - df["COGS"] - df["Total Commissions"]
     df["EBITDA"] = df["Gross Profit"] - df["Marketing"] - df["Salaries"] - df["Misc Costs"]
-    df["Corporate Tax"] = df["EBITDA"].apply(lambda x: x * (config.corporate_tax / 100.0) if x > 0 else 0)
+    df["Corporate Tax"] = df["Total Gross Revenue"] * (config.corporate_tax / 100.0)
     df["Net Profit"] = df["EBITDA"] - df["Corporate Tax"]
     df["Net Cash Flow"] = df["Total Gross Revenue"] - df["Total Commissions"] - df["Total Expenses"] - df["Corporate Tax"]
     # Accrual-basis P&L

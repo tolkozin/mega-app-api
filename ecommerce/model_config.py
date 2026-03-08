@@ -16,6 +16,7 @@ class EcomPhaseConfig:
     click_to_purchase: float = 3.0       # конверсия клик → покупка %
     organic_pct: float = 20.0            # % органики от общего трафика
     discount_rate: float = 5.0           # средняя скидка %
+    monthly_salary: float = 8000.0       # зарплаты/мес
 
 
 @dataclass
@@ -31,22 +32,20 @@ class EcomConfig:
     phase1: EcomPhaseConfig = field(default_factory=lambda: EcomPhaseConfig(
         avg_order_value=45.0, repeat_purchase_rate=10.0, orders_per_returning=1.2,
         cogs_pct=45.0, return_rate=5.0, ad_budget=3000.0, cpc=2.00,
-        click_to_purchase=2.0, organic_pct=10.0, discount_rate=10.0,
+        click_to_purchase=2.0, organic_pct=10.0, discount_rate=10.0, monthly_salary=5000.0,
     ))
     phase2: EcomPhaseConfig = field(default_factory=lambda: EcomPhaseConfig(
         avg_order_value=50.0, repeat_purchase_rate=20.0, orders_per_returning=1.5,
         cogs_pct=40.0, return_rate=5.0, ad_budget=8000.0, cpc=1.50,
-        click_to_purchase=3.0, organic_pct=20.0, discount_rate=5.0,
+        click_to_purchase=3.0, organic_pct=20.0, discount_rate=5.0, monthly_salary=8000.0,
     ))
     phase3: EcomPhaseConfig = field(default_factory=lambda: EcomPhaseConfig(
         avg_order_value=55.0, repeat_purchase_rate=30.0, orders_per_returning=2.0,
         cogs_pct=35.0, return_rate=4.0, ad_budget=20000.0, cpc=1.20,
-        click_to_purchase=4.0, organic_pct=30.0, discount_rate=3.0,
+        click_to_purchase=4.0, organic_pct=30.0, discount_rate=3.0, monthly_salary=12000.0,
     ))
 
     # OpEx
-    salaries_base: float = 5000.0         # начальные зарплаты/мес
-    salaries_growth: float = 3.0          # рост зарплат %/мес
     misc_costs: float = 2000.0            # прочие расходы/мес
 
     # Tax

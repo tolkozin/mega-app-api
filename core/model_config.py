@@ -7,7 +7,7 @@ import json
 @dataclass
 class PhaseConfig:
     investment: float = 0.0
-    salaries_total: float = 0.0
+    monthly_salary: float = 15000.0
     misc_total: float = 0.0
     ad_budget: float = 0.0
     cpi: float = 7.50
@@ -88,7 +88,7 @@ class ModelConfig:
 
     # Per-phase configs
     phase1: PhaseConfig = field(default_factory=lambda: PhaseConfig(
-        investment=100000.0, salaries_total=17475.0, misc_total=8419.0,
+        investment=100000.0, monthly_salary=5825.0, misc_total=8419.0,
         ad_budget=0.0, cpi=7.50, conv_trial=0.0, conv_paid=0.0,
         churn_mult=1.0,
         ad_growth_mode="Percentage (%)", ad_growth_pct=0.0, ad_growth_abs=0.0,
@@ -100,7 +100,7 @@ class ModelConfig:
         cogs=0.10,
     ))
     phase2: PhaseConfig = field(default_factory=lambda: PhaseConfig(
-        investment=0.0, salaries_total=3600.0, misc_total=750.0,
+        investment=0.0, monthly_salary=1200.0, misc_total=750.0,
         ad_budget=5000.0, cpi=7.50, conv_trial=20.0, conv_paid=20.0,
         churn_mult=1.5,
         ad_growth_mode="Percentage (%)", ad_growth_pct=5.0, ad_growth_abs=5000.0,
@@ -112,7 +112,7 @@ class ModelConfig:
         cogs=0.10,
     ))
     phase3: PhaseConfig = field(default_factory=lambda: PhaseConfig(
-        investment=0.0, salaries_total=64800.0, misc_total=13500.0,
+        investment=0.0, monthly_salary=1200.0, misc_total=13500.0,
         ad_budget=150000.0, cpi=7.50, conv_trial=25.0, conv_paid=25.0,
         churn_mult=1.0,
         ad_growth_mode="Percentage (%)", ad_growth_pct=5.0, ad_growth_abs=5000.0,
