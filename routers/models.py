@@ -14,6 +14,10 @@ from ecommerce.model_config import EcomConfig
 from ecommerce.engine import run_ecom_model
 from ecommerce.scenarios import build_ecom_scenario_params
 
+from saas.model_config import SaasConfig
+from saas.engine import run_saas_model
+from saas.scenarios import build_saas_scenario_params
+
 router = APIRouter(prefix="/api/run", tags=["models"])
 
 
@@ -38,6 +42,11 @@ class SubscriptionRunRequest(BaseModel):
 
 
 class EcommerceRunRequest(BaseModel):
+    config: dict
+    sensitivity: dict | None = None
+
+
+class SaasRunRequest(BaseModel):
     config: dict
     sensitivity: dict | None = None
 
@@ -89,6 +98,33 @@ def run_ecommerce(req: EcommerceRunRequest):
 
     try:
         df, milestones = run_ecom_model(config, sens)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
+
+    dataframe = df.to_dict(orient="records")
+
+    return sanitize({
+        "dataframe": dataframe,
+        "milestones": milestones,
+    })
+
+
+@router.post("/saas")
+def run_saas(req: SaasRunRequest):
+    try:
+        config = SaasConfig.from_dict(req.config)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Invalid config: {e}")
+
+    # Determine sensitivity params
+    if req.sensitivity is not None:
+        sens = req.sensitivity
+    else:
+        scenarios = build_saas_scenario_params(config)
+        sens = scenarios["base"]
+
+    try:
+        df, milestones = run_saas_model(config, sens)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
 

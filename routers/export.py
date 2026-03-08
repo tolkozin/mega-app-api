@@ -15,6 +15,10 @@ from ecommerce.model_config import EcomConfig
 from ecommerce.engine import run_ecom_model
 from ecommerce.scenarios import build_ecom_scenario_params
 
+from saas.model_config import SaasConfig
+from saas.engine import run_saas_model
+from saas.scenarios import build_saas_scenario_params
+
 router = APIRouter(prefix="/api/export", tags=["export"])
 
 
@@ -57,6 +61,23 @@ def export_csv(req: ExportRequest):
 
         try:
             df, _milestones = run_ecom_model(config, sens)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
+
+    elif req.model_type == "saas":
+        try:
+            config = SaasConfig.from_dict(req.config)
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"Invalid config: {e}")
+
+        if req.sensitivity is not None:
+            sens = req.sensitivity
+        else:
+            scenarios = build_saas_scenario_params(config)
+            sens = scenarios["base"]
+
+        try:
+            df, _milestones = run_saas_model(config, sens)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
 
