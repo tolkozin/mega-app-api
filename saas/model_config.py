@@ -6,6 +6,7 @@ import json
 
 @dataclass
 class SaasPhaseConfig:
+    investment: float = 100000.0          # investment / funding for this phase
     seats_per_account: float = 5.0        # avg seats per new account
     price_per_seat: float = 49.0          # $/seat/month
     annual_contract_pct: float = 70.0     # % of deals on annual contracts
@@ -37,19 +38,19 @@ class SaasConfig:
 
     # Per-phase configs
     phase1: SaasPhaseConfig = field(default_factory=lambda: SaasPhaseConfig(
-        seats_per_account=3, price_per_seat=39, annual_contract_pct=50, annual_discount=15,
+        investment=100000, seats_per_account=3, price_per_seat=39, annual_contract_pct=50, annual_discount=15,
         ad_budget=3000, cpl=200, lead_to_demo=20, demo_to_close=15,
         sales_cycle_months=2, expansion_rate=1, contraction_rate=0.5, logo_churn_rate=3,
         cogs_per_seat=6, organic_leads_pct=10, monthly_salary=10000,
     ))
     phase2: SaasPhaseConfig = field(default_factory=lambda: SaasPhaseConfig(
-        seats_per_account=5, price_per_seat=49, annual_contract_pct=70, annual_discount=15,
+        investment=0, seats_per_account=5, price_per_seat=49, annual_contract_pct=70, annual_discount=15,
         ad_budget=8000, cpl=150, lead_to_demo=30, demo_to_close=25,
         sales_cycle_months=1, expansion_rate=3, contraction_rate=1, logo_churn_rate=2,
         cogs_per_seat=5, organic_leads_pct=20, monthly_salary=20000,
     ))
     phase3: SaasPhaseConfig = field(default_factory=lambda: SaasPhaseConfig(
-        seats_per_account=8, price_per_seat=49, annual_contract_pct=80, annual_discount=15,
+        investment=0, seats_per_account=8, price_per_seat=49, annual_contract_pct=80, annual_discount=15,
         ad_budget=20000, cpl=120, lead_to_demo=35, demo_to_close=30,
         sales_cycle_months=1, expansion_rate=5, contraction_rate=1, logo_churn_rate=1.5,
         cogs_per_seat=4, organic_leads_pct=30, monthly_salary=30000,
