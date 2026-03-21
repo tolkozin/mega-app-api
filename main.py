@@ -25,9 +25,13 @@ _allowed_origins = os.environ.get(
     "https://revenuemap.app,https://www.revenuemap.app,http://localhost:3000",
 ).split(",")
 
+# Also allow all Vercel preview deployments (*.vercel.app)
+_allow_vercel_previews = os.environ.get("CORS_ALLOW_VERCEL_PREVIEWS", "true").lower() == "true"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app" if _allow_vercel_previews else None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
