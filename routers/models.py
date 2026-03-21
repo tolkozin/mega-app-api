@@ -1,10 +1,12 @@
-"""Model execution endpoints — subscription and e-commerce."""
+"""Model execution endpoints — subscription, e-commerce, and SaaS."""
 
 import math
+import signal
+import logging
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from core.model_config import ModelConfig
 from core.engine import run_model
@@ -18,20 +20,72 @@ from saas.model_config import SaasConfig
 from saas.engine import run_saas_model
 from saas.scenarios import build_saas_scenario_params
 
+logger = logging.getLogger("revenuemap.models")
+
 router = APIRouter(prefix="/api/run", tags=["models"])
+
+# --------------- constants ---------------
+
+MAX_TOTAL_MONTHS = 240
+MAX_MC_ITERATIONS = 500
+MODEL_TIMEOUT_SECONDS = 30
 
 
 # --------------- helpers ---------------
 
-def sanitize(obj: Any) -> Any:
+def sanitize(obj: Any, depth: int = 0) -> Any:
     """Replace NaN/Infinity floats with None for JSON serialization."""
+    if depth > 20:
+        return obj
     if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
         return None
     if isinstance(obj, dict):
-        return {k: sanitize(v) for k, v in obj.items()}
+        return {k: sanitize(v, depth + 1) for k, v in obj.items()}
     if isinstance(obj, list):
-        return [sanitize(i) for i in obj]
+        return [sanitize(i, depth + 1) for i in obj]
     return obj
+
+
+class TimeoutError(Exception):
+    pass
+
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError("Model computation timed out")
+
+
+def run_with_timeout(fn, *args, timeout_sec: int = MODEL_TIMEOUT_SECONDS):
+    """Run a function with a timeout. Falls back to no-timeout on Windows."""
+    try:
+        old = signal.signal(signal.SIGALRM, _timeout_handler)
+        signal.alarm(timeout_sec)
+        try:
+            return fn(*args)
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old)
+    except AttributeError:
+        # Windows — no SIGALRM, just run without timeout
+        return fn(*args)
+
+
+def validate_config_dict(config: dict) -> dict:
+    """Clamp dangerous values in config dict before parsing."""
+    config = config.copy()
+    if "total_months" in config:
+        config["total_months"] = max(1, min(int(config["total_months"]), MAX_TOTAL_MONTHS))
+    if "mc_iterations" in config:
+        config["mc_iterations"] = max(1, min(int(config["mc_iterations"]), MAX_MC_ITERATIONS))
+
+    # Validate phase durations
+    total = config.get("total_months", 60)
+    p1 = config.get("phase1_dur", 3)
+    p2 = config.get("phase2_dur", 3)
+    if p1 + p2 >= total:
+        config["phase1_dur"] = max(1, total // 3)
+        config["phase2_dur"] = max(1, total // 3)
+
+    return config
 
 
 # --------------- request schemas ---------------
@@ -55,22 +109,24 @@ class SaasRunRequest(BaseModel):
 
 @router.post("/subscription")
 def run_subscription(req: SubscriptionRunRequest):
+    validated = validate_config_dict(req.config)
     try:
-        config = ModelConfig.from_dict(req.config)
+        config = ModelConfig.from_dict(validated)
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Invalid config: {e}")
+        logger.warning("Invalid subscription config: %s", e)
+        raise HTTPException(status_code=422, detail="Invalid configuration")
 
-    # Determine sensitivity params
-    if req.sensitivity is not None:
-        sens = req.sensitivity
-    else:
-        scenarios = build_scenario_params(config)
-        sens = scenarios["base"]
+    sens = req.sensitivity if req.sensitivity is not None else build_scenario_params(config)["base"]
 
     try:
-        df, milestones, retention_matrix = run_model(config, sens)
+        logger.info("Running subscription model: %d months", config.total_months)
+        df, milestones, retention_matrix = run_with_timeout(run_model, config, sens)
+    except TimeoutError:
+        logger.error("Subscription model timed out (%d months)", config.total_months)
+        raise HTTPException(status_code=504, detail="Model computation timed out")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
+        logger.error("Subscription model error: %s", e)
+        raise HTTPException(status_code=500, detail="Model execution failed")
 
     dataframe = df.to_dict(orient="records")
     retention = retention_matrix.tolist()
@@ -84,22 +140,24 @@ def run_subscription(req: SubscriptionRunRequest):
 
 @router.post("/ecommerce")
 def run_ecommerce(req: EcommerceRunRequest):
+    validated = validate_config_dict(req.config)
     try:
-        config = EcomConfig.from_dict(req.config)
+        config = EcomConfig.from_dict(validated)
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Invalid config: {e}")
+        logger.warning("Invalid ecommerce config: %s", e)
+        raise HTTPException(status_code=422, detail="Invalid configuration")
 
-    # Determine sensitivity params
-    if req.sensitivity is not None:
-        sens = req.sensitivity
-    else:
-        scenarios = build_ecom_scenario_params(config)
-        sens = scenarios["base"]
+    sens = req.sensitivity if req.sensitivity is not None else build_ecom_scenario_params(config)["base"]
 
     try:
-        df, milestones = run_ecom_model(config, sens)
+        logger.info("Running ecommerce model: %d months", config.total_months)
+        df, milestones = run_with_timeout(run_ecom_model, config, sens)
+    except TimeoutError:
+        logger.error("Ecommerce model timed out (%d months)", config.total_months)
+        raise HTTPException(status_code=504, detail="Model computation timed out")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
+        logger.error("Ecommerce model error: %s", e)
+        raise HTTPException(status_code=500, detail="Model execution failed")
 
     dataframe = df.to_dict(orient="records")
 
@@ -111,22 +169,24 @@ def run_ecommerce(req: EcommerceRunRequest):
 
 @router.post("/saas")
 def run_saas(req: SaasRunRequest):
+    validated = validate_config_dict(req.config)
     try:
-        config = SaasConfig.from_dict(req.config)
+        config = SaasConfig.from_dict(validated)
     except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Invalid config: {e}")
+        logger.warning("Invalid saas config: %s", e)
+        raise HTTPException(status_code=422, detail="Invalid configuration")
 
-    # Determine sensitivity params
-    if req.sensitivity is not None:
-        sens = req.sensitivity
-    else:
-        scenarios = build_saas_scenario_params(config)
-        sens = scenarios["base"]
+    sens = req.sensitivity if req.sensitivity is not None else build_saas_scenario_params(config)["base"]
 
     try:
-        df, milestones = run_saas_model(config, sens)
+        logger.info("Running SaaS model: %d months", config.total_months)
+        df, milestones = run_with_timeout(run_saas_model, config, sens)
+    except TimeoutError:
+        logger.error("SaaS model timed out (%d months)", config.total_months)
+        raise HTTPException(status_code=504, detail="Model computation timed out")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model execution error: {e}")
+        logger.error("SaaS model error: %s", e)
+        raise HTTPException(status_code=500, detail="Model execution failed")
 
     dataframe = df.to_dict(orient="records")
 
