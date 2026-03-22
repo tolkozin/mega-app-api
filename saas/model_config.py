@@ -38,22 +38,22 @@ class SaasConfig:
 
     # Per-phase configs
     phase1: SaasPhaseConfig = field(default_factory=lambda: SaasPhaseConfig(
-        investment=100000, seats_per_account=3, price_per_seat=39, annual_contract_pct=50, annual_discount=15,
-        ad_budget=3000, cpl=200, lead_to_demo=20, demo_to_close=15,
-        sales_cycle_months=2, expansion_rate=1, contraction_rate=0.5, logo_churn_rate=3,
-        cogs_per_seat=6, organic_leads_pct=10, monthly_salary=10000,
+        investment=100000, seats_per_account=4, price_per_seat=49, annual_contract_pct=60, annual_discount=15,
+        ad_budget=5000, cpl=120, lead_to_demo=30, demo_to_close=20,
+        sales_cycle_months=1, expansion_rate=2, contraction_rate=0.5, logo_churn_rate=2,
+        cogs_per_seat=5, organic_leads_pct=15, monthly_salary=10000,
     ))
     phase2: SaasPhaseConfig = field(default_factory=lambda: SaasPhaseConfig(
-        investment=0, seats_per_account=5, price_per_seat=49, annual_contract_pct=70, annual_discount=15,
-        ad_budget=8000, cpl=150, lead_to_demo=30, demo_to_close=25,
-        sales_cycle_months=1, expansion_rate=3, contraction_rate=1, logo_churn_rate=2,
-        cogs_per_seat=5, organic_leads_pct=20, monthly_salary=20000,
+        investment=0, seats_per_account=6, price_per_seat=49, annual_contract_pct=70, annual_discount=15,
+        ad_budget=12000, cpl=100, lead_to_demo=35, demo_to_close=30,
+        sales_cycle_months=1, expansion_rate=4, contraction_rate=1, logo_churn_rate=1.5,
+        cogs_per_seat=4, organic_leads_pct=25, monthly_salary=20000,
     ))
     phase3: SaasPhaseConfig = field(default_factory=lambda: SaasPhaseConfig(
-        investment=0, seats_per_account=8, price_per_seat=49, annual_contract_pct=80, annual_discount=15,
-        ad_budget=20000, cpl=120, lead_to_demo=35, demo_to_close=30,
-        sales_cycle_months=1, expansion_rate=5, contraction_rate=1, logo_churn_rate=1.5,
-        cogs_per_seat=4, organic_leads_pct=30, monthly_salary=30000,
+        investment=0, seats_per_account=10, price_per_seat=59, annual_contract_pct=80, annual_discount=15,
+        ad_budget=25000, cpl=80, lead_to_demo=40, demo_to_close=35,
+        sales_cycle_months=1, expansion_rate=6, contraction_rate=1, logo_churn_rate=1,
+        cogs_per_seat=3, organic_leads_pct=35, monthly_salary=30000,
     ))
 
     # OpEx
@@ -63,8 +63,8 @@ class SaasConfig:
     corporate_tax: float = 1.0
 
     # Initial state
-    initial_customers: int = 0
-    initial_seats: int = 0
+    initial_customers: int = 5
+    initial_seats: int = 20
     investment: float = 100000.0
 
     # Sensitivity

@@ -71,9 +71,9 @@ class ModelConfig:
     bank_fee: float = 1.0
 
     # Retention & Churn
-    weekly_cancel_rate: float = 15.0
-    monthly_churn_rate: float = 10.0
-    annual_non_renewal: float = 30.0
+    weekly_cancel_rate: float = 12.0
+    monthly_churn_rate: float = 8.0
+    annual_non_renewal: float = 25.0
 
     # Trial & Refunds
     trial_days: int = 7
@@ -84,43 +84,43 @@ class ModelConfig:
     downgrade_rate: float = 5.0
 
     # Organic starting traffic
-    starting_organic: float = 0.0
+    starting_organic: float = 200.0
 
     # Per-phase configs
     phase1: PhaseConfig = field(default_factory=lambda: PhaseConfig(
-        investment=100000.0, monthly_salary=5825.0, misc_total=8419.0,
-        ad_budget=0.0, cpi=7.50, conv_trial=0.0, conv_paid=0.0,
+        investment=100000.0, monthly_salary=5000.0, misc_total=3000.0,
+        ad_budget=3000.0, cpi=5.00, conv_trial=15.0, conv_paid=15.0,
         churn_mult=1.0,
         ad_growth_mode="Percentage (%)", ad_growth_pct=0.0, ad_growth_abs=0.0,
         cpi_degradation=0.0,
-        organic_growth_mode="Percentage (%)", organic_growth_pct=0.0, organic_growth_abs=0.0,
-        organic_conv_trial=0.0, organic_conv_paid=0.0, organic_spend=0.0,
-        price_weekly=4.99, price_monthly=7.99, price_annual=49.99,
-        mix_weekly=0.0, mix_monthly=0.48, mix_annual=0.52,
+        organic_growth_mode="Absolute ($)", organic_growth_pct=0.0, organic_growth_abs=100.0,
+        organic_conv_trial=20.0, organic_conv_paid=20.0, organic_spend=0.0,
+        price_weekly=4.99, price_monthly=9.99, price_annual=79.99,
+        mix_weekly=0.0, mix_monthly=0.45, mix_annual=0.55,
         cogs=0.10,
     ))
     phase2: PhaseConfig = field(default_factory=lambda: PhaseConfig(
-        investment=0.0, monthly_salary=1200.0, misc_total=750.0,
-        ad_budget=5000.0, cpi=7.50, conv_trial=20.0, conv_paid=20.0,
-        churn_mult=1.5,
-        ad_growth_mode="Percentage (%)", ad_growth_pct=5.0, ad_growth_abs=5000.0,
-        cpi_degradation=1.0,
-        organic_growth_mode="Percentage (%)", organic_growth_pct=10.0, organic_growth_abs=50.0,
-        organic_conv_trial=25.0, organic_conv_paid=25.0, organic_spend=500.0,
-        price_weekly=4.99, price_monthly=7.99, price_annual=49.99,
-        mix_weekly=0.0, mix_monthly=0.48, mix_annual=0.52,
+        investment=0.0, monthly_salary=8000.0, misc_total=2000.0,
+        ad_budget=10000.0, cpi=4.50, conv_trial=25.0, conv_paid=25.0,
+        churn_mult=1.2,
+        ad_growth_mode="Percentage (%)", ad_growth_pct=8.0, ad_growth_abs=2000.0,
+        cpi_degradation=0.5,
+        organic_growth_mode="Percentage (%)", organic_growth_pct=15.0, organic_growth_abs=200.0,
+        organic_conv_trial=30.0, organic_conv_paid=30.0, organic_spend=1000.0,
+        price_weekly=4.99, price_monthly=9.99, price_annual=79.99,
+        mix_weekly=0.0, mix_monthly=0.45, mix_annual=0.55,
         cogs=0.10,
     ))
     phase3: PhaseConfig = field(default_factory=lambda: PhaseConfig(
-        investment=0.0, monthly_salary=1200.0, misc_total=13500.0,
-        ad_budget=150000.0, cpi=7.50, conv_trial=25.0, conv_paid=25.0,
+        investment=0.0, monthly_salary=15000.0, misc_total=5000.0,
+        ad_budget=30000.0, cpi=4.00, conv_trial=30.0, conv_paid=30.0,
         churn_mult=1.0,
-        ad_growth_mode="Percentage (%)", ad_growth_pct=5.0, ad_growth_abs=5000.0,
-        cpi_degradation=1.0,
-        organic_growth_mode="Percentage (%)", organic_growth_pct=15.0, organic_growth_abs=500.0,
+        ad_growth_mode="Percentage (%)", ad_growth_pct=5.0, ad_growth_abs=3000.0,
+        cpi_degradation=0.5,
+        organic_growth_mode="Percentage (%)", organic_growth_pct=12.0, organic_growth_abs=500.0,
         organic_conv_trial=35.0, organic_conv_paid=35.0, organic_spend=2000.0,
-        price_weekly=4.99, price_monthly=7.99, price_annual=49.99,
-        mix_weekly=0.0, mix_monthly=0.48, mix_annual=0.52,
+        price_weekly=4.99, price_monthly=9.99, price_annual=79.99,
+        mix_weekly=0.0, mix_monthly=0.45, mix_annual=0.55,
         cogs=0.10,
     ))
 
