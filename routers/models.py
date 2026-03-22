@@ -69,15 +69,44 @@ def run_with_timeout(fn, *args, timeout_sec: int = MODEL_TIMEOUT_SECONDS):
         return fn(*args)
 
 
+def _safe_num(val: Any, default: float = 0) -> float:
+    """Convert a value to a finite number, falling back to default."""
+    if val is None or val == "":
+        return default
+    try:
+        n = float(val)
+        if math.isnan(n) or math.isinf(n):
+            return default
+        return n
+    except (TypeError, ValueError):
+        return default
+
+
 def validate_config_dict(config: dict) -> dict:
-    """Clamp dangerous values in config dict before parsing."""
+    """Clamp dangerous values and sanitise inputs before parsing."""
     config = config.copy()
+
+    # Sanitise all numeric values (handles "", None, NaN)
+    for key, val in config.items():
+        if isinstance(val, dict):
+            # Phase sub-configs — sanitise recursively
+            config[key] = {k: _safe_num(v) if not isinstance(v, dict) else v
+                           for k, v in val.items()}
+        elif key != "type" and not isinstance(val, (dict, list, bool)):
+            config[key] = _safe_num(val)
+
     if "total_months" in config:
         config["total_months"] = max(1, min(int(config["total_months"]), MAX_TOTAL_MONTHS))
     if "mc_iterations" in config:
         config["mc_iterations"] = max(1, min(int(config["mc_iterations"]), MAX_MC_ITERATIONS))
 
-    # Validate phase durations
+    # Phase durations must be >= 1
+    if "phase1_dur" in config:
+        config["phase1_dur"] = max(1, int(config["phase1_dur"]))
+    if "phase2_dur" in config:
+        config["phase2_dur"] = max(1, int(config["phase2_dur"]))
+
+    # Ensure phases fit within total months
     total = config.get("total_months", 60)
     p1 = config.get("phase1_dur", 3)
     p2 = config.get("phase2_dur", 3)
