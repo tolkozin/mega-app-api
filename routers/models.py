@@ -87,12 +87,21 @@ def validate_config_dict(config: dict) -> dict:
     config = config.copy()
 
     # Sanitise all numeric values (handles "", None, NaN)
+    def _should_sanitize(v: Any) -> bool:
+        """Return True if value should be converted to a number."""
+        if isinstance(v, (dict, list, bool)):
+            return False
+        if isinstance(v, str):
+            # Preserve real string values (contain letters), sanitize empty/"123" strings
+            return not any(c.isalpha() for c in v)
+        return True
+
     for key, val in config.items():
         if isinstance(val, dict):
-            # Phase sub-configs — sanitise recursively
-            config[key] = {k: _safe_num(v) if not isinstance(v, dict) else v
+            # Phase sub-configs — sanitise recursively (preserve strings like ad_growth_mode)
+            config[key] = {k: _safe_num(v) if _should_sanitize(v) else v
                            for k, v in val.items()}
-        elif key != "type" and not isinstance(val, (dict, list, bool)):
+        elif key != "type" and _should_sanitize(val):
             config[key] = _safe_num(val)
 
     if "total_months" in config:

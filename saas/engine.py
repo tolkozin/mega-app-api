@@ -75,7 +75,7 @@ def run_saas_model(config: SaasConfig, sens_params: dict | None = None):
 
         # Deal closing (with sales cycle delay)
         demo_to_close = cfg.demo_to_close / 100.0 * conv_factor
-        delay = cfg.sales_cycle_months
+        delay = int(cfg.sales_cycle_months)
         if i >= delay:
             # Use demos from `delay` months ago
             demos_for_close = demos[i - delay] if delay > 0 else demos[i]
