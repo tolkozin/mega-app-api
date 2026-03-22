@@ -64,8 +64,8 @@ def run_with_timeout(fn, *args, timeout_sec: int = MODEL_TIMEOUT_SECONDS):
         finally:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, old)
-    except AttributeError:
-        # Windows — no SIGALRM, just run without timeout
+    except (AttributeError, ValueError):
+        # Windows (no SIGALRM) or non-main thread — run without timeout
         return fn(*args)
 
 
